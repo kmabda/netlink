@@ -308,21 +308,22 @@ func NeighDeserialize(m []byte) (*Neigh, error) {
 // NeighSubscribe takes a chan down which notifications will be sent
 // when neighbors are added or deleted. Close the 'done' chan to stop subscription.
 func NeighSubscribe(ch chan<- NeighUpdate, done <-chan struct{}) error {
-	return neighSubscribeAt(netns.None(), netns.None(), ch, done, nil, false)
+	return neighSubscribeAt(netns.None(), netns.None(), ch, done, nil, false, 0)
 }
 
 // NeighSubscribeAt works like NeighSubscribe plus it allows the caller
 // to choose the network namespace in which to subscribe (ns).
 func NeighSubscribeAt(ns netns.NsHandle, ch chan<- NeighUpdate, done <-chan struct{}) error {
-	return neighSubscribeAt(ns, netns.None(), ch, done, nil, false)
+	return neighSubscribeAt(ns, netns.None(), ch, done, nil, false, 0)
 }
 
 // NeighSubscribeOptions contains a set of options to use with
 // NeighSubscribeWithOptions.
 type NeighSubscribeOptions struct {
-	Namespace     *netns.NsHandle
-	ErrorCallback func(error)
-	ListExisting  bool
+	Namespace         *netns.NsHandle
+	ErrorCallback     func(error)
+	ListExisting      bool
+	ReceiveBufferSize int
 }
 
 // NeighSubscribeWithOptions work like NeighSubscribe but enable to
@@ -333,10 +334,10 @@ func NeighSubscribeWithOptions(ch chan<- NeighUpdate, done <-chan struct{}, opti
 		none := netns.None()
 		options.Namespace = &none
 	}
-	return neighSubscribeAt(*options.Namespace, netns.None(), ch, done, options.ErrorCallback, options.ListExisting)
+	return neighSubscribeAt(*options.Namespace, netns.None(), ch, done, options.ErrorCallback, options.ListExisting, options.ReceiveBufferSize)
 }
 
-func neighSubscribeAt(newNs, curNs netns.NsHandle, ch chan<- NeighUpdate, done <-chan struct{}, cberr func(error), listExisting bool) error {
+func neighSubscribeAt(newNs, curNs netns.NsHandle, ch chan<- NeighUpdate, done <-chan struct{}, cberr func(error), listExisting bool, rcvbuf int) error {
 	s, err := nl.SubscribeAt(newNs, curNs, unix.NETLINK_ROUTE, unix.RTNLGRP_NEIGH)
 	makeRequest := func(family int) error {
 		req := pkgHandle.newNetlinkRequest(unix.RTM_GETNEIGH,
@@ -350,6 +351,12 @@ func neighSubscribeAt(newNs, curNs netns.NsHandle, ch chan<- NeighUpdate, done <
 	}
 	if err != nil {
 		return err
+	}
+	if rcvbuf != 0 {
+		err = pkgHandle.SetSocketReceiveBufferSize(rcvbuf, false)
+		if err != nil {
+			return err
+		}
 	}
 	if done != nil {
 		go func() {
