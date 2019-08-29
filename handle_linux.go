@@ -9,8 +9,7 @@ import (
 	"golang.org/x/sys/unix"
 )
 
-// Empty handle used by the netlink package methods
-var pkgHandle = &Handle{}
+var pkgHandle *Handle
 
 // Handle is an handle for the netlink requests on a
 // specific network namespace. All the requests on the
@@ -25,6 +24,13 @@ type Handle struct {
 func (h *Handle) SupportsNetlinkFamily(nlFamily int) bool {
 	_, ok := h.sockets[nlFamily]
 	return ok
+}
+
+// Initialize the handle used by the netlink package methods with the
+// set of netlink socket families supported so that the socket receive
+// buffer size can be set for the subscription methods
+func init() {
+	pkgHandle, _ = NewHandle()
 }
 
 // NewHandle returns a netlink handle on the current network namespace.
