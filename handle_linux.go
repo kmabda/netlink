@@ -79,6 +79,14 @@ func (h *Handle) SetSocketReceiveBufferSize(size int, force bool) error {
 	return nil
 }
 
+// a helper function that wrap a NetlinkSocket in a Handle than calls
+// SetSocketReceiveBufferSize
+func setSocketReceiveBufferSizeFromNetlinkSocket(s *nl.NetlinkSocket, size int, force bool) error {
+	h := &Handle{sockets: map[int]*nl.SocketHandle{}}
+	h.sockets[nl.FAMILY_ALL] = &nl.SocketHandle{Socket: s}
+	return h.SetSocketReceiveBufferSize(size, force)
+}
+
 // GetSocketReceiveBufferSize gets the receiver buffer size for each
 // socket in the netlink handle. The retrieved value should be the
 // double to the one set for SetSocketReceiveBufferSize.

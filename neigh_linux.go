@@ -354,8 +354,10 @@ func neighSubscribeAt(newNs, curNs netns.NsHandle, ch chan<- NeighUpdate, done <
 		return err
 	}
 	if rcvbuf != 0 {
-		err = pkgHandle.SetSocketReceiveBufferSize(rcvbuf, force)
-		if err != nil {
+		if err := pkgHandle.SetSocketReceiveBufferSize(rcvbuf, force); err != nil {
+			return err
+		}
+		if err := setSocketReceiveBufferSizeFromNetlinkSocket(s, rcvbuf, force); err != nil {
 			return err
 		}
 	}
