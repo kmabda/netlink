@@ -2344,6 +2344,8 @@ func parseGretunData(link Link, data []syscall.NetlinkRouteAttr) {
 	gre := link.(*Gretun)
 	for _, datum := range data {
 		switch datum.Attr.Type {
+		case nl.IFLA_GRE_LINK:
+			gre.Link = native.Uint32(datum.Value[0:4])
 		case nl.IFLA_GRE_IKEY:
 			gre.IKey = ntohl(datum.Value[0:4])
 		case nl.IFLA_GRE_OKEY:
