@@ -1012,6 +1012,20 @@ func (h *Handle) LinkAdd(link Link) error {
 	return h.linkModify(link, unix.NLM_F_CREATE|unix.NLM_F_EXCL|unix.NLM_F_ACK)
 }
 
+// LinkModify modify an existing link device. The type and features of the device
+// are taken from the parameters in the link object.
+// Equivalent to: `ip link add $link`
+func LinkModify(link Link) error {
+	return pkgHandle.LinkModify(link)
+}
+
+// LinkModify modify an existing link device. The type and features of the device
+// are taken from the parameters in the link object.
+// Equivalent to: `ip link add $link`
+func (h *Handle) LinkModify(link Link) error {
+	return h.linkModify(link, unix.NLM_F_CREATE|unix.NLM_F_ACK)
+}
+
 func (h *Handle) linkModify(link Link, flags int) error {
 	// TODO: support extra data for macvlan
 	base := link.Attrs()
